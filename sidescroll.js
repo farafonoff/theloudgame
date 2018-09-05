@@ -1,16 +1,43 @@
 // main
+function randomInRange(min, max) {
+	let diff = max - min;
+	return Math.random() * diff + min;
+}
+function clamp(v, min, max) {
+	return v < min? min: (v>max?max: v);
+}
+function makeCoordsList(width, height) {
+	let runMin = 20;
+	let runMax = 60;
+	let heightMin = 0;
+	let heightMax = 0.8;
+	let result = [];
+	let currentCoord = new Coords(0, height/2);
+	while (currentCoord.x < width) {
+		let run = randomInRange(runMin, runMax);
+		let slope = randomInRange(-run, run);
+		let segment = new Coords(run, slope);
+		let nextCoord = currentCoord.clone().add(segment);
+		nextCoord.y = clamp(nextCoord.y, height* heightMin, height* heightMax);
+		let edge = new Edge([ currentCoord, nextCoord]);
+		result.push(edge);
+		currentCoord = nextCoord;
+	}
+	return result;
+};
 
 function main(parentNode)
 {
   var level = new Level
 	(
 		"Level 1",
-		new Coords(parentNode.clientWidth, parentNode.clientHeight), // size
+		new Coords(10000, parentNode.clientHeight), // size
 		new Coords(0, 1), // accelerationDueToGravity
 		.15, // velocityMin
 		.4, // friction
+		makeCoordsList(10000, parentNode.clientHeight)
 		// edges
-		[
+		/*[
 			new Edge( [ new Coords(5, 50), new Coords(25, 50) ] ),
 			new Edge( [ new Coords(25, 50), new Coords(45, 45) ] ),
 			new Edge( [ new Coords(45, 45), new Coords(55, 50) ] ),
@@ -22,7 +49,7 @@ function main(parentNode)
 			new Edge( [ new Coords(280, 60), new Coords(295, 60) ] ),
 			new Edge( [ new Coords(240, 70), new Coords(275, 70) ] ),
 			new Edge( [ new Coords(200, 80), new Coords(220, 80) ] ),
-		]
+		]*/
 	);
 
 	var bodyDefnPlayer = new BodyDefn
@@ -33,7 +60,8 @@ function main(parentNode)
 		1, // velocityMaxRun
 		6, // accelerationJump
 		8, // velocityMaxFlying
-		new IntelligenceDefnHuman(),
+		//new IntelligenceDefnHuman(),
+		new IntelligenceAudioFixSpeed(parentNode.clientHeight),
 		new Face
 		([
 			new Edge([ new Coords(0, 0), new Coords(0, -12) ]),
@@ -48,54 +76,12 @@ function main(parentNode)
 		new Coords(10, 10)
 	);
 
-	var bodyDefnEnemy = new BodyDefn
-	(
-		"Enemy",
-		.4, // accelerationRun
-		0, // accelerationFly
-		.5, // velocityMaxRun
-		6, // accelerationJump
-		8, // velocityMaxFlying
-		new IntelligenceDefnPatroller(),
-		new Face
-		([
-			new Edge([ new Coords(-4, 0), new Coords(-3, -6) ]),
-			new Edge([ new Coords(-3, -6), new Coords(3, -6) ]),
-			new Edge([ new Coords(3, -6), new Coords(4, 0) ]),
-			new Edge([ new Coords(4, 0), new Coords(-4, 0) ]),
-		])
-	);
-
 	var levelRun = new LevelRun
 	(
 		level,
 		// movers
 		[
-			bodyForPlayer,
-			new Body
-			(
-				"Enemy0",
-				bodyDefnEnemy,
-				new Coords(100, 10)
-			),
-			new Body
-			(
-				"Enemy1",
-				bodyDefnEnemy,
-				new Coords(130, 10)
-			),
-			new Body
-			(
-				"Enemy2",
-				bodyDefnEnemy,
-				new Coords(150, 10)
-			),
-			new Body
-			(
-				"Enemy1",
-				bodyDefnEnemy,
-				new Coords(150, 10)
-			),
+			bodyForPlayer
 		]
 	);
 
@@ -702,7 +688,7 @@ function DisplayHelper(parentNode, viewSize)
 	{
 		if (color == null)
 		{
-			color = "LightGray";
+			color = "Red";
 		}
 
 		this.graphics.strokeStyle = color;
@@ -1041,6 +1027,22 @@ function IntelligenceDefnNone()
 	}
 }
 
+function IntelligenceAudioFixSpeed(heightScale) {
+	this.heightScale = heightScale;
+}
+{
+	IntelligenceAudioFixSpeed.prototype.initializeIntelligence = function(intelligence)
+	{
+		// do nothing
+	}
+
+	IntelligenceAudioFixSpeed.prototype.decideActionForMover = function(intelligence, mover) {
+		var player = mover;
+		player.vel.x = 10;
+		player.pos.y = (1-window.peak)*this.heightScale;
+	}
+}
+
 function IntelligenceDefnHuman()
 {
 	// do nothing	
@@ -1103,42 +1105,6 @@ function IntelligenceDefnHuman()
 	IntelligenceDefnHuman.prototype.initializeIntelligence = function(intelligence)
 	{
 		// do nothing
-	}
-}
-
-function IntelligenceDefnPatroller()
-{
-	this.distanceToExtremeMin = 5;
-}
-{
-	IntelligenceDefnPatroller.prototype.decideActionForMover = function(intelligence, mover)
-	{
-		var edgeBeingStoodOn = mover.edgeBeingStoodOn;
-
-		if (edgeBeingStoodOn  != null)
-		{
-			var extremeIndex = (intelligence.directionCurrent > 0 ? 1 : 0);
-			var edgeExtremeAhead = edgeBeingStoodOn.bounds.minAndMax[extremeIndex];
-			var distanceToExtreme = Math.abs
-			(
-				edgeExtremeAhead.x
-				- mover.pos.x
-			);
-
-			if (distanceToExtreme < this.distanceToExtremeMin)
-			{
-				intelligence.directionCurrent *= -1;
-			}
-	
-			mover.vel.x += 
-				mover.defn.accelerationRun 
-				* intelligence.directionCurrent;
-		}
-	}
-
-	IntelligenceDefnPatroller.prototype.initializeIntelligence = function(intelligence)
-	{
-		intelligence.directionCurrent = 1;
 	}
 }
 

@@ -246,6 +246,7 @@ var webAudioPeakMeter = (function() {
           textLabels[i] = dbFromFloat(channelPeaks[i]).toFixed(1);
         }
       }
+      window.peak = Math.max.apply(Math, channelMaxes);
     };
   
     var paintMeter = function() {
