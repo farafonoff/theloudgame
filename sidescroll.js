@@ -65,8 +65,12 @@ function main(parentNode)
 		new Face
 		([
 			new Edge([ new Coords(0, 0), new Coords(0, -12) ]),
-			new Edge([ new Coords(0, -12), new Coords(0, 0) ]),
-		])
+			new Edge([ new Coords(0, -12), new Coords(0, 0) ])
+		], { image: {
+			data: document.getElementById('playerImg'),
+			size: new Coords(100, 100),
+			}
+		})
 	);
 
 	var bodyForPlayer = new Body
@@ -615,6 +619,10 @@ function DisplayHelper(parentNode, viewSize)
 
 	DisplayHelper.prototype.drawBody = function(body, cameraPos)
 	{
+		if (body.face.image) {
+			this.drawImage(body.face.image, body.face.vertices[0], cameraPos);
+			return;
+		}
 		var vertices = body.face.vertices;
 
 		for (var v = 0; v < vertices.length; v++)
@@ -704,6 +712,13 @@ function DisplayHelper(parentNode, viewSize)
 			endPos.y - cameraPos.y
 		);
 		this.graphics.stroke();
+	}
+
+	DisplayHelper.prototype.drawImage = function(image, pos, cameraPos) {
+		let offset = pos.clone().subtract(cameraPos);
+		let imgcenter = image.size.clone().divideScalar(2);
+		offset.subtract(imgcenter);
+		this.graphics.drawImage(image.data, offset.x, offset.y, image.size.x, image.size.y);
 	}
 
 	DisplayHelper.prototype.drawLevelRun = function(levelRun)
@@ -859,9 +874,10 @@ this.id = Debug.idNext();
 	}
 }
 
-function Face(edges)
+function Face(edges, options)
 {
 	this.edges = edges;
+	Object.assign(this, options);
 	this.vertices = [];
 	for (var i = 0; i < this.edges.length; i++)
 	{
@@ -882,7 +898,7 @@ function Face(edges)
 {
 	Face.prototype.clone = function()
 	{
-		return new Face(Cloneable.cloneMany(this.edges));
+		return new Face(Cloneable.cloneMany(this.edges), { image: this.image });
 	}
 
 	Face.prototype.overwriteWith = function(other)
@@ -1039,7 +1055,7 @@ function IntelligenceAudioFixSpeed(heightScale) {
 	IntelligenceAudioFixSpeed.prototype.decideActionForMover = function(intelligence, mover) {
 		var player = mover;
 		player.vel.x = 10;
-		player.pos.y = (1-window.peak)*this.heightScale;
+		player.pos.y = (1-window.peak)*this.heightScale - 100;
 	}
 }
 
