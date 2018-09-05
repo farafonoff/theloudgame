@@ -1,0 +1,18 @@
+<body>
+        <div id="wrapper" style="display: flex; flex-direction: row; height: 100%; width: 100%;">
+            <div id="my-peak-meter" style="height: 100%; width: 40px;"></div>
+            <div id="gameView" style="height: 100%; width: 100%;"></div>
+        </div>
+</body>
+<script src="peakmeter.js"></script>
+<script src="sidescroll.js"></script>
+<script>
+    navigator.mediaDevices.getUserMedia ({audio: true, video: false}).then(stream => {
+        var audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
+        var source = audioCtx.createMediaStreamSource(stream);
+        var myMeterElement = document.getElementById('my-peak-meter');
+        var meterNode = webAudioPeakMeter.createMeterNode(source, audioCtx);
+        webAudioPeakMeter.createMeter(myMeterElement, meterNode, {});
+        //var analyser = audioCtx.createAnalyser();
+    });
+</script>
