@@ -9,13 +9,15 @@ function clamp(v, min, max) {
 function makeCoordsList(width, height) {
 	let runMin = 20;
 	let runMax = 60;
-	let heightMin = 0;
-	let heightMax = 0.8;
+	let heightMin = 0.2;
+	let heightMax = 1.0;
 	let result = [];
 	let currentCoord = new Coords(0, height/2);
 	while (currentCoord.x < width) {
 		let run = randomInRange(runMin, runMax);
-		let slope = randomInRange(-run, run);
+		let slope = randomInRange(-1, 1);
+		if (slope > 0) slope = 1; else slope = -1;
+		slope *= run;
 		let segment = new Coords(run, slope);
 		let nextCoord = currentCoord.clone().add(segment);
 		nextCoord.y = clamp(nextCoord.y, height* heightMin, height* heightMax);
@@ -32,7 +34,7 @@ function main(parentNode)
 	(
 		"Level 1",
 		new Coords(10000, parentNode.clientHeight), // size
-		new Coords(0, 1), // accelerationDueToGravity
+		new Coords(0, 5), // accelerationDueToGravity
 		.15, // velocityMin
 		.4, // friction
 		makeCoordsList(10000, parentNode.clientHeight)
@@ -603,7 +605,7 @@ function DisplayHelper(parentNode, viewSize)
 {
 	DisplayHelper.prototype.clear = function()
 	{
-		this.graphics.fillStyle = "White";
+		/*this.graphics.fillStyle = "White";
 		this.graphics.strokeStyle = "LightGray";
 		this.graphics.fillRect
 		(
@@ -614,7 +616,8 @@ function DisplayHelper(parentNode, viewSize)
 		(
 			0, 0, 
 			this.viewSize.x, this.viewSize.y
-		);
+		);*/
+		this.graphics.clearRect(0, 0, this.viewSize.x, this.viewSize.y);
 	}
 
 	DisplayHelper.prototype.drawBody = function(body, cameraPos)
@@ -1055,7 +1058,12 @@ function IntelligenceAudioFixSpeed(heightScale) {
 	IntelligenceAudioFixSpeed.prototype.decideActionForMover = function(intelligence, mover) {
 		var player = mover;
 		player.vel.x = 10;
-		player.pos.y = (1-window.peak)*this.heightScale - 100;
+		let accel = player.defn.accelerationJump * window.peak * 2 || 0;
+		player.vel.y -= accel;
+		if (player.edgeBeingStoodOn != null) {
+			//player.integrity = 0;
+		}
+		//player.pos.y = (1-window.peak)*this.heightScale - 100;
 	}
 }
 
@@ -1280,7 +1288,7 @@ function LevelRun(level, movers)
 		{
 			var mover = this.movers[m];
 			var moverDefn = mover.defn;
-
+			let velx = mover.vel.x;
 			mover.vel.add
 			(
 				this.level.accelerationDueToGravity
@@ -1288,6 +1296,8 @@ function LevelRun(level, movers)
 			(
 				mover.defn.velocityMaxFlying
 			);
+			//Audio: fix velocity
+			mover.vel.x = velx;
 
 			var bodiesToCollideWith = [];
 
@@ -1499,7 +1509,7 @@ function LevelRun(level, movers)
 
 	LevelRun.prototype.updateForTimerTick_WinOrLose = function()
 	{
-		if (this.bodyForPlayer.pos.y >= this.level.size.y * 2)
+		if (this.bodyForPlayer.pos.y >= this.level.size.y * 2 || this.bodyForPlayer.integrity <=0 )
 		{
 			document.write("Game Over");
 			Globals.Instance.finalize();
